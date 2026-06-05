@@ -723,6 +723,10 @@ textarea.form-input{resize:vertical;min-height:70px}
           <div class="page-title">Produtos & Materiais</div>
           <div class="page-subtitle">Cadastro de materiais, insumos e itens do almoxarifado</div>
         </div>
+        <button class="btn btn-secondary" onclick="reimportarCatalogo()" title="Força a importação dos 55 itens padrão" style="margin-right:6px">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:5px;vertical-align:-2px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.45"/></svg>
+          Reimportar Catálogo
+        </button>
         <button class="btn btn-primary" onclick="openProdModal()">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
           Novo Item
@@ -1580,6 +1584,7 @@ const K = {p:'rt_products',m:'rt_movs',o:'rt_obras',c:'rt_colab',e:'rt_epis'};
 // ══════════════════════════════════════════
 (function seedProdutos(){
   function u2(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  const SEED_VERSION = 'v10_r2'; // bump this to force re-sync on next open
   const SEED=[
     {code:'EPI-001',name:'Capacete de Segurança - Azul',cat:'EPI',qty:0,min:5,unit:'UN',loc:'Almoxarifado – Prateleira A1',ca:'31728',fornecedor:'Neobetel',obs:'Classe A'},
     {code:'EPI-002',name:'Bota Segurança Nº42',cat:'EPI',qty:0,min:4,unit:'PAR',loc:'Almoxarifado – Prateleira A2',ca:'22943',fornecedor:'Neobetel',obs:''},
@@ -1648,10 +1653,10 @@ const K = {p:'rt_products',m:'rt_movs',o:'rt_obras',c:'rt_colab',e:'rt_epis'};
         added++;
       }
     });
-    if(added>0){
-      localStorage.setItem('rt_products',JSON.stringify(existing));
-      console.log('[REALTEC] Seed: '+added+' produto(s) inserido(s).');
-    }
+    // Always save (ensures data is present even on first load)
+    localStorage.setItem('rt_products',JSON.stringify(existing));
+    localStorage.setItem('rt_seed_ver', SEED_VERSION);
+    if(added>0) console.log('[REALTEC] Seed: '+added+' produto(s) inserido(s).');
   }catch(e){console.warn('[REALTEC] Seed error:',e);}
 })();
 
@@ -2009,6 +2014,80 @@ function saveProd(){
     autoSyncProduct(np).then(r=>showSyncBadge(r?.ok!==false));
   }
   closeProdModal();renderProds();updBadge();renderDash();
+}
+function reimportarCatalogo(){
+  if(!confirm('Importar os 55 itens padrão da Realtec?\nItens já cadastrados NÃO serão duplicados nem alterados.')) return;
+  function u2(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+  const SEED=[
+    {code:'EPI-001',name:'Capacete de Segurança - Azul',cat:'EPI',qty:0,min:5,unit:'UN',loc:'Almoxarifado – Prateleira A1',ca:'31728',fornecedor:'Neobetel',obs:'Classe A'},
+    {code:'EPI-002',name:'Bota Segurança Nº42',cat:'EPI',qty:0,min:4,unit:'PAR',loc:'Almoxarifado – Prateleira A2',ca:'22943',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-003',name:'Luva de Raspa Curta',cat:'EPI',qty:0,min:10,unit:'PAR',loc:'Almoxarifado – Prateleira A3',ca:'11782',fornecedor:'Danny',obs:''},
+    {code:'EPI-004',name:'Óculos de Proteção Incolor Aguia',cat:'EPI',qty:0,min:8,unit:'UN',loc:'Almoxarifado – Prateleira A4',ca:'35422',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-005',name:'Cinto de Segurança',cat:'EPI',qty:0,min:3,unit:'UN',loc:'Almoxarifado – Prateleira A5',ca:'18392',fornecedor:'Pró-Safety',obs:'Trabalho em altura'},
+    {code:'LIM-001',name:'Detergente 5L',cat:'Limpeza',qty:0,min:3,unit:'GL',loc:'Depósito – Prateleira L1',ca:'',fornecedor:'',obs:''},
+    {code:'LIM-002',name:'Álcool 70% 1L',cat:'Limpeza',qty:0,min:5,unit:'UN',loc:'Depósito – Prateleira L2',ca:'',fornecedor:'',obs:''},
+    {code:'EL-001',name:'Cabo PP 2x1,5mm',cat:'Elétrico',qty:250,min:100,unit:'M',loc:'Galpão – Prateleira 1',ca:'',fornecedor:'',obs:'Rolo de 100m'},
+    {code:'EL-002',name:'Disjuntor 20A Bipolar',cat:'Elétrico',qty:8,min:10,unit:'UN',loc:'Galpão – Prateleira 2',ca:'',fornecedor:'',obs:''},
+    {code:'FE-001',name:'Chave de Fenda 1/4"',cat:'Ferramenta',qty:12,min:5,unit:'UN',loc:'Almoxarifado – Gaveta 2',ca:'',fornecedor:'',obs:''},
+    {code:'ME-001',name:'Parafuso Sextavado M8',cat:'Mecânico',qty:180,min:50,unit:'PC',loc:'Almoxarifado – Gaveta 5',ca:'',fornecedor:'',obs:''},
+    {code:'CI-001',name:'Cimento CP-II 50kg',cat:'Civil',qty:30,min:15,unit:'SC',loc:'Pátio Externo',ca:'',fornecedor:'',obs:'Manter em local seco'},
+    {code:'EPI-006',name:'Oculos Incolor Fenix',cat:'EPI',qty:0,min:4,unit:'UN',loc:'Almoxarifado - Prateleira A2',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-007',name:'Luva Raspa Longa',cat:'EPI',qty:0,min:0,unit:'PAR',loc:'Almoxarifado - Prateleira A2',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-008',name:'Talabarte',cat:'EPI',qty:0,min:0,unit:'UN',loc:'Almoxarifado - Prateleira A2',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-009',name:'Oculos Ampla Visão',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-010',name:'Luva Multitato PU',cat:'EPI',qty:0,min:5,unit:'UN',loc:'Almoxarifado - Prateleira A1',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-011',name:'Oculos Cancun (Grau)',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:'Para colaboradores que necessitam de óculos de grau.'},
+    {code:'EPI-012',name:'Mascara de Solda',cat:'EPI',qty:0,min:0,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/CIG/Nova Epi/Center Soldas',obs:''},
+    {code:'EPI-013',name:'Protetor Facial Incolor',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-014',name:'Suporte p/ Protetor Facial',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-015',name:'Capacete Segurança Branco',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-016',name:'Carneira + Jugular',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-017',name:'Protetor Auricular Abafador',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-018',name:'Protetor Auricular Acoplar',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-019',name:'Protetor Auricular Plug Silicone',cat:'EPI',qty:0,min:20,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-020',name:'Avental Raspa',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-021',name:'Casaco Raspa c/ Manga',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel/Nova Epi',obs:''},
+    {code:'EPI-022',name:'Mangote Raspa',cat:'EPI',qty:0,min:2,unit:'PAR',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-023',name:'Perneira Raspa',cat:'EPI',qty:0,min:2,unit:'PAR',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-024',name:'Casaco Raspa c/ Velcro',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-025',name:'Jaleco Padrão c/ Elastico M',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-026',name:'Jaleco Padrão c/ Elástico P',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-027',name:'Jaleco Padrão c/ Elástico G',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-028',name:'Jaleco Padrão c/ Elástico GG',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-029',name:'Jaleco Padrão c/ Elástico EXG',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-030',name:'Calça Padrão 1/2 Elástico P',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-031',name:'Calça Padrão 1/2 Elástico M',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-032',name:'Calça Padrão 1/2 Elástico G',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-033',name:'Calça Padrão 1/2 Elástico GG',cat:'EPI',qty:0,min:10,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-034',name:'Calça Padrão 1/2 Elástico EXG',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart/Crie Arts',obs:''},
+    {code:'EPI-035',name:'Camisa Padrão Jeans P',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart',obs:''},
+    {code:'EPI-036',name:'Camisa Padrão Jeans M',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart',obs:''},
+    {code:'EPI-037',name:'Camisa Padrão Jeans G',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart',obs:''},
+    {code:'EPI-038',name:'Camisa Padrão Jeans GG',cat:'EPI',qty:0,min:5,unit:'UN',loc:'',ca:'',fornecedor:'Comart',obs:''},
+    {code:'EPI-039',name:'Camisa Padrão Jeans EXG',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Comart',obs:''},
+    {code:'EPI-040',name:'Bota Segurança Nº35',cat:'EPI',qty:0,min:1,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-041',name:'Bota Segurança Nº36',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-042',name:'Bota Segurança Nº37',cat:'EPI',qty:0,min:2,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-043',name:'Bota Segurança Nº38',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-044',name:'Bota Segurança Nº39',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-045',name:'Bota Segurança Nº40',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-046',name:'Bota Segurança Nº41',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-047',name:'Bota Segurança Nº43',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''},
+    {code:'EPI-048',name:'Bota Segurança Nº44',cat:'EPI',qty:0,min:4,unit:'UN',loc:'',ca:'',fornecedor:'Neobetel',obs:''}
+  ];
+  let existing=[];
+  try{existing=JSON.parse(localStorage.getItem('rt_products'))||[];}catch(e){}
+  const existingCodes=new Set(existing.map(p=>(p.code||'').trim().toUpperCase()));
+  let added=0;
+  SEED.forEach(p=>{
+    if(!existingCodes.has(p.code.trim().toUpperCase())){
+      existing.push({id:u2(),...p});
+      added++;
+    }
+  });
+  localStorage.setItem('rt_products',JSON.stringify(existing));
+  toast(added>0?`${added} item(ns) importado(s) com sucesso!`:'Todos os itens já estavam cadastrados.','success');
+  renderProds();updBadge();renderDash();
 }
 function delProd(id){
   const p=db.prods().find(x=>x.id===id);
